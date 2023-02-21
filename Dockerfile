@@ -4,9 +4,9 @@ LABEL maintainer="webteam@rheinwerk-verlag.de"
 
 COPY requirements.txt /tmp/
 COPY setup.py /tmp/
-COPY docs /tmp/
+COPY docs/ /tmp/
 COPY README.rst /tmp/
-COPY pganonymize /tmp/
+COPY pganonymize/ /tmp/
 
 WORKDIR /tmp/
 
