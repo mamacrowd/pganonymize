@@ -20,8 +20,7 @@ def get_pg_args(args):
     :return: A dictionary with database arguments
     :rtype: dict
     """
-    return ({name: value for name, value in
-             zip(DATABASE_ARGS, (args.dbname, args.user, args.password, args.host, args.port))})
+    return dict(zip(DATABASE_ARGS, (args.dbname, args.user, args.password, args.host, args.port)))
 
 
 def list_provider_classes():
@@ -54,9 +53,7 @@ def get_arg_parser():
 def main(args):
     """Main method"""
 
-    loglevel = logging.WARNING
-    if args.verbose:
-        loglevel = logging.DEBUG
+    loglevel = logging.DEBUG if args.verbose else logging.WARNING
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
 
     if args.list_providers:
@@ -69,7 +66,7 @@ def main(args):
     connection = get_connection(pg_args)
     if args.init_sql:
         cursor = connection.cursor()
-        logging.info('Executing initialisation sql {}'.format(args.init_sql))
+        logging.info(f'Executing initialisation sql {args.init_sql}')
         cursor.execute(args.init_sql)
         cursor.close()
 

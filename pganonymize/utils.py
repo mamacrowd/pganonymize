@@ -8,6 +8,7 @@ import math
 import re
 import subprocess
 import time
+from functools import lru_cache
 
 import parmap
 import psycopg2
@@ -211,6 +212,11 @@ def get_table_count(connection, table, dry_run):
         return total_count
 
 
+@lru_cache(maxsize=10000000)
+def generate_value(provider_class, orig_value, **provider_config):
+    return provider_class.alter_value(orig_value, **provider_config)
+
+
 def get_column_values(row, columns):
     """
     Return a dictionary for a single data row, with altered data.
@@ -236,7 +242,7 @@ def get_column_values(row, columns):
         # Skip the current column if there is no value to be altered
         if orig_value is not None:
             provider_class = provider_registry.get_provider(provider_config['name'])
-            value = provider_class.alter_value(orig_value, **provider_config)
+            value = generate_value(provider_class, orig_value, **provider_config)
             append = column_definition.get('append')
             if append:
                 value = value + append

@@ -6,6 +6,7 @@ from hashlib import md5
 from uuid import uuid4
 
 from faker import Faker
+import string
 
 from pganonymize.config import config
 from pganonymize.exceptions import InvalidProvider, InvalidProviderArgument, ProviderAlreadyRegistered
@@ -52,9 +53,10 @@ class FakerInitializer(object):
         """
         try:
             generator = self.faker[locale]
-        except KeyError:
-            raise InvalidProviderArgument('Locale \'{}\' is unknown. Have you added it to the global option '
-                                          '(options.faker.locales)?'.format(locale))
+        except KeyError as e:
+            raise InvalidProviderArgument(f"Locale \'{locale}\' is unknown. Have you added it to the global option "
+                                          f"(" f"options.faker.locales)?") from e
+
         return generator
 
 
@@ -76,8 +78,8 @@ class ProviderRegistry(object):
         :raises ProviderAlreadyRegistered: If another provider with the given id has been registered
         """
         if provider_id in self._registry:
-            raise ProviderAlreadyRegistered('A provider with the id "{}" has already been registered'
-                                            .format(provider_id))
+            raise ProviderAlreadyRegistered(f'A provider with the id "{provider_id}" has already been registered')
+
         self._registry[provider_id] = provider_class
 
     def get_provider(self, provider_id):
@@ -92,7 +94,7 @@ class ProviderRegistry(object):
         for key, cls in self._registry.items():
             if (cls.regex_match is True and re.match(re.compile(key), provider_id) is not None) or key == provider_id:
                 return cls
-        raise InvalidProvider('Could not find provider with id "{}"'.format(provider_id))
+        raise InvalidProvider(f'Could not find provider with id "{provider_id}"')
 
     @property
     def providers(self):
@@ -116,10 +118,12 @@ def register(provider_id, **kwargs):
     :return: The decorator function
     :rtype: function
     """
+
     def wrapper(provider_class):
         registry = kwargs.get('registry', provider_registry)
         registry.register(provider_class, provider_id)
         return provider_class
+
     return wrapper
 
 
@@ -173,7 +177,7 @@ class FakeProvider(Provider):
         try:
             func = operator.attrgetter(func_name)(faker_generator)
         except AttributeError as exc:
-            raise InvalidProviderArgument(exc)
+            raise InvalidProviderArgument(exc) from exc
         return func(**func_kwargs)
 
 
@@ -224,10 +228,7 @@ class MD5Provider(Provider):
         as_number = kwargs.get('as_number', False)
         as_number_length = kwargs.get('as_number_length', cls.default_max_length)
         hashed = md5(original_value.encode('utf-8')).hexdigest()
-        if as_number:
-            return int(hashed, 16) % (10 ** as_number_length)
-        else:
-            return hashed
+        return int(hashed, 16) % (10 ** as_number_length) if as_number else hashed
 
 
 @register('set')
@@ -245,4 +246,184 @@ class UUID4Provider(Provider):
 
     @classmethod
     def alter_value(cls, original_value, **kwargs):
+        return uuid4()
+
+
+@register('fiscal_code')
+class FiscalCodeProvider(Provider):
+    """Provider to hash a fiscal code."""
+
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
+        crypt_fiscal_code = md5(original_value.encode('utf-8')).hexdigest()
+
+        def check_day(n_day):
+            if int(n_day[3]) > 7:
+                n_day[3] = str(1)
+            return n_day[3:5]
+
+        def check_month(month_character):
+            char_month = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T']
+            if month_character in char_month:
+                return month_character
+            index = 4
+            return char_month[index]
+
+        def generate_fiscal_code(fc_characters, fc_numbers):
+            separator = ''
+            generate_fiscal_code = ((separator.join(fc_characters[:6]) + separator.join(fc_numbers[:2]) +
+                                     check_month(fc_characters[8])) + separator.join(check_day(fc_numbers)) +
+                                    fc_characters[11]) + separator.join(fc_numbers[6:9]) + fc_characters[12]
+
+            return generate_fiscal_code
+
+        split_string = []
+        n = 2
+        for index in range(0, len(crypt_fiscal_code), n):
+            split_string.append(crypt_fiscal_code[index: index + n])
+
+        characters = []
+
+        for digit in split_string:
+            digit_hex = int(digit, 16)
+            digit_char = digit_hex % 26
+            character = chr(ord('A') + digit_char)
+            characters.append(character)
+
+        numbers = []
+        for digit in split_string[6:]:
+            digit_hex = int(digit, 16)
+            digit_char = digit_hex % 10
+            numbers.append(str(digit_char))
+
+        generate_fiscal_code = generate_fiscal_code(characters, numbers)
+        return generate_fiscal_code
+
+
+@register('vatnumber')
+class VatNumberProvider(Provider):
+    """Provider to hash a vat number."""
+
+    def alter_value(self, original_value, **kwargs):
+        vatnumber = original_value[2:]
+        crypt_vat_number = md5(vatnumber.encode('utf-8')).hexdigest()
+
+        n = 2
+        split_string = [crypt_vat_number[index : index + n] for index in range(0, len(crypt_vat_number), n)]
+
+        numbers = [str(int(digit, 16) % 10) for digit in split_string]
+        separator = ''
+        return f'IT{separator.join(numbers[:9])}'
+
+
+@register('fiscalcodebusiness')
+class FiscalCodeBusinessProvider(Provider):
+    """Provider to hash a vat number."""
+
+    def alter_value(self, original_value, **kwargs):
+        fiscalcode_business = original_value[:]
+        crypt_fiscalcode_business = md5(fiscalcode_business.encode('utf-8')).hexdigest()
+
+        n = 2
+        split_string = [crypt_fiscalcode_business[index : index + n] for index in range(0, len(crypt_fiscalcode_business), n)]
+
+        numbers = [str(int(digit, 16) % 10) for digit in split_string]
+        separator = ''
+        return separator.join(numbers[:9])
+
+
+@register('fiscalcodevat')
+class FiscalCodeVatNumberProvider(Provider):
+    """Provider to hash a vat number."""
+
+    def alter_value(self, original_value, **kwargs):
+
+        if original_value[0].isdigit():
+            # code for fiscalcode legal entity
+            fiscalcode_business = original_value[:]
+            crypt_fiscalcode_business = md5(fiscalcode_business.encode('utf-8')).hexdigest()
+
+            split_string = []
+            n = 2
+            for index in range(0, len(crypt_fiscalcode_business), n):
+                split_string.append(crypt_fiscalcode_business[index: index + n])
+
+            numbers = []
+            for digit in split_string:
+                digit_hex = int(digit, 16)
+                digit_char = digit_hex % 10
+                numbers.append(str(digit_char))
+
+            separator = ''
+            generate_fiscalcode_business = separator.join(numbers[:9])
+            return generate_fiscalcode_business
+        else:
+            # code for fiscalcode natural person
+            crypt_fiscal_code = md5(original_value.encode('utf-8')).hexdigest()
+
+            def check_day(numbers):
+                if int(numbers[3]) > 7:
+                    numbers[3] = str(1)
+                return numbers[3:5]
+
+            def check_month(character):
+                char_month = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T']
+                if character in char_month:
+                    return character
+                index = 4
+                return char_month[index]
+
+            def generate_fiscal_code(characters, numbers):
+                separator = ''
+                generate_fiscal_code = ((separator.join(characters[:6]) + separator.join(numbers[:2]) + check_month(characters[8])) + separator.join(check_day(numbers)) + characters[11]) + separator.join(numbers[6:9]) + characters[12]
+
+                return generate_fiscal_code
+
+            split_string = []
+            n = 2
+            for index in range(0, len(crypt_fiscal_code), n):
+                split_string.append(crypt_fiscal_code[index: index + n])
+
+            characters = []
+
+            for digit in split_string:
+                digit_hex = int(digit, 16)
+                digit_char = digit_hex % 26
+                character = chr(ord('A') + digit_char)
+                characters.append(character)
+
+            numbers = []
+            for digit in split_string[6:]:
+                digit_hex = int(digit, 16)
+                digit_char = digit_hex % 10
+                numbers.append(str(digit_char))
+
+            generate_fiscal_code = generate_fiscal_code(characters, numbers)
+            return generate_fiscal_code
+
+
+@register('phonenumberita')
+class SetProvider(Provider):
+    """Provider to set a random value for phone number."""
+
+    def alter_value(self, original_value, **kwargs):
+        prefix = '+003'
+        return prefix + ''.join([str(random.randint(0, 9)) for _ in range(9)])
+
+
+@register('randomidcard')
+class SetProvider(Provider):
+    """Provider to set a random value for id card."""
+
+    def alter_value(self, original_value, **kwargs):
+        chars = ''.join(random.choice(string.ascii_letters).upper() for _ in range(2))
+        numbers = ''.join([str(random.randint(0, 9)) for _ in range(7)])
+        return chars+numbers
+
+
+@register('apikey')
+class SetProvider(Provider):
+    """Provider to set a random uuid"""
+
+    def alter_value(self, original_value, **kwargs):
         return uuid4()

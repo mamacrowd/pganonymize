@@ -6,3 +6,4 @@ pytest==6.2.5
 Sphinx==4.3.0
 sphinx-rtd-theme==1.0.0
 tqdm>=4.61.1
+Faker>=17.0.0
