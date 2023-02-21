@@ -2,6 +2,15 @@ FROM python:3.8.1-slim
 
 LABEL maintainer="webteam@rheinwerk-verlag.de"
 
+COPY requirements.txt /tmp/
+COPY setup.py /tmp/
+COPY docs /tmp/
+COPY README.rst /tmp/
+COPY pganonymize /tmp/
+
+WORKDIR /tmp/
+
+
 RUN apt-get update -y \
  && apt-get upgrade -y \
  && apt-get install -y libpq-dev python3-pip \
