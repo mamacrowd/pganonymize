@@ -304,7 +304,8 @@ class FiscalCodeProvider(Provider):
 class VatNumberProvider(Provider):
     """Provider to hash a vat number."""
 
-    def alter_value(self, original_value, **kwargs):
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
         vatnumber = original_value[2:]
         crypt_vat_number = md5(vatnumber.encode('utf-8')).hexdigest()
 
@@ -320,7 +321,8 @@ class VatNumberProvider(Provider):
 class FiscalCodeBusinessProvider(Provider):
     """Provider to hash a vat number."""
 
-    def alter_value(self, original_value, **kwargs):
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
         fiscalcode_business = original_value[:]
         crypt_fiscalcode_business = md5(fiscalcode_business.encode('utf-8')).hexdigest()
 
@@ -336,7 +338,8 @@ class FiscalCodeBusinessProvider(Provider):
 class FiscalCodeVatNumberProvider(Provider):
     """Provider to hash a vat number."""
 
-    def alter_value(self, original_value, **kwargs):
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
 
         if original_value[0].isdigit():
             # code for fiscalcode legal entity
@@ -406,7 +409,8 @@ class FiscalCodeVatNumberProvider(Provider):
 class SetProvider(Provider):
     """Provider to set a random value for phone number."""
 
-    def alter_value(self, original_value, **kwargs):
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
         prefix = '+003'
         return prefix + ''.join([str(random.randint(0, 9)) for _ in range(9)])
 
@@ -415,7 +419,8 @@ class SetProvider(Provider):
 class SetProvider(Provider):
     """Provider to set a random value for id card."""
 
-    def alter_value(self, original_value, **kwargs):
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
         chars = ''.join(random.choice(string.ascii_letters).upper() for _ in range(2))
         numbers = ''.join([str(random.randint(0, 9)) for _ in range(7)])
         return chars+numbers
@@ -425,5 +430,6 @@ class SetProvider(Provider):
 class SetProvider(Provider):
     """Provider to set a random uuid"""
 
-    def alter_value(self, original_value, **kwargs):
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
         return uuid4()
