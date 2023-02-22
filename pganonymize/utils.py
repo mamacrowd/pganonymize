@@ -52,6 +52,7 @@ def anonymize_tables(connection, verbose=False, dry_run=False):
 
 
 def process_row(row, columns, excludes):
+    logging.debug(f"columns: {columns}, row: {row}")
     if row_matches_excludes(row, excludes):
         return None
     else:
@@ -96,6 +97,7 @@ def build_and_then_import_data(connection, table, primary_key, columns,
     for i in trange(batches, desc="Processing {} batches for {}".format(batches, table), disable=not verbose):
         records = cursor.fetchmany(size=chunk_size)
         if records:
+            logging.debug(f"excluding {excludes} in {table}")
             data = parmap.map(process_row, records, columns, excludes, pm_pbar=verbose)
             import_data(connection, temp_table, [primary_key] + column_names, filter(None, data))
     apply_anonymized_data(connection, temp_table, table, primary_key, columns)
