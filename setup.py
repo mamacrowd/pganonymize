@@ -50,7 +50,8 @@ install_requires = [
     'psycopg2>=2.8.4,<2.9; python_version<"3.6"',
     'pyyaml',
     'pyyaml>=5.4.1,<6.0; python_version<"3.6"',
-    'tqdm'
+    'tqdm',
+    'methodtools'
 ]
 
 tests_require = [

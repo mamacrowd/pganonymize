@@ -8,7 +8,7 @@ import math
 import re
 import subprocess
 import time
-from functools import lru_cache
+from methodtools import lru_cache
 
 import parmap
 import psycopg2
@@ -150,8 +150,12 @@ def row_matches_excludes(row, excludes=None):
         column = list(definition.keys())[0]
         for exclude in definition.get(column, []):
             pattern = re.compile(exclude, re.IGNORECASE)
-            if row[column] is not None and pattern.match(row[column]):
-                return True
+            logging.debug(f"QQQQQQQ {row} {column} {row.keys()}")
+            try:
+                if row[column] is not None and pattern.match(row[column]):
+                    return True
+            except:
+                pass
     return False
 
 
