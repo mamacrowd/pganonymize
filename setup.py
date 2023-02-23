@@ -51,7 +51,7 @@ install_requires = [
     'pyyaml',
     'pyyaml>=5.4.1,<6.0; python_version<"3.6"',
     'tqdm',
-    'methodtools'
+    'cachetools'
 ]
 
 tests_require = [

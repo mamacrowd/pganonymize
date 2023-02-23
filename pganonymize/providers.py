@@ -1,3 +1,4 @@
+import json
 import operator
 import random
 import re
@@ -249,7 +250,7 @@ class UUID4Provider(Provider):
         return uuid4()
 
 
-@register('fiscal_code')
+@register('fiscalcode')
 class FiscalCodeProvider(Provider):
     """Provider to hash a fiscal code."""
 
@@ -433,3 +434,12 @@ class SetProvider(Provider):
     @classmethod
     def alter_value(cls, original_value, **kwargs):
         return uuid4()
+
+
+@register('jsonstring')
+class JsonStringProvider(Provider):
+    """Provider to generate jsonstring"""
+
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
+        return json.dumps(kwargs.get('object'))

@@ -1,14 +1,18 @@
 """Helper methods"""
 
 from __future__ import absolute_import
-
+import typing
 import json
 import logging
 import math
 import re
 import subprocess
 import time
-from methodtools import lru_cache
+from datetime import datetime, date
+from uuid import UUID
+
+from cachetools import cached
+from cachetools.keys import hashkey
 
 import parmap
 import psycopg2
@@ -52,7 +56,6 @@ def anonymize_tables(connection, verbose=False, dry_run=False):
 
 
 def process_row(row, columns, excludes):
-    logging.debug(f"columns: {columns}, row: {row}")
     if row_matches_excludes(row, excludes):
         return None
     else:
@@ -97,7 +100,6 @@ def build_and_then_import_data(connection, table, primary_key, columns,
     for i in trange(batches, desc="Processing {} batches for {}".format(batches, table), disable=not verbose):
         records = cursor.fetchmany(size=chunk_size)
         if records:
-            logging.debug(f"excluding {excludes} in {table}")
             data = parmap.map(process_row, records, columns, excludes, pm_pbar=verbose)
             import_data(connection, temp_table, [primary_key] + column_names, filter(None, data))
     apply_anonymized_data(connection, temp_table, table, primary_key, columns)
@@ -150,7 +152,6 @@ def row_matches_excludes(row, excludes=None):
         column = list(definition.keys())[0]
         for exclude in definition.get(column, []):
             pattern = re.compile(exclude, re.IGNORECASE)
-            logging.debug(f"QQQQQQQ {row} {column} {row.keys()}")
             try:
                 if row[column] is not None and pattern.match(row[column]):
                     return True
@@ -218,9 +219,20 @@ def get_table_count(connection, table, dry_run):
         return total_count
 
 
-@lru_cache(maxsize=10000000)
+def cache_key_generator(provider_class, value):
+    if isinstance(value, (datetime, date)):
+        value = value.isoformat()
+    if not isinstance({}, typing.Hashable):
+        value = json.dumps(value)
+    return hashkey(provider_class.__name__, value)
+
+@cached(
+    cache={},
+    key=lambda provider_class, orig_value, **provider_config: cache_key_generator(provider_class, orig_value)
+)
 def generate_value(provider_class, orig_value, **provider_config):
-    return provider_class.alter_value(orig_value, **provider_config)
+    out = provider_class.alter_value(orig_value, **provider_config)
+    return out
 
 
 def get_column_values(row, columns):
@@ -248,6 +260,7 @@ def get_column_values(row, columns):
         # Skip the current column if there is no value to be altered
         if orig_value is not None:
             provider_class = provider_registry.get_provider(provider_config['name'])
+            #print("EEEEEEEEEE", provider_class.__name__, orig_value, type(orig_value))
             value = generate_value(provider_class, orig_value, **provider_config)
             append = column_definition.get('append')
             if append:
@@ -336,6 +349,8 @@ def escape_str_replace(value):
     """
     if isinstance(value, dict):
         return json.dumps(value).encode()
+    if isinstance(value, str):
+        return str.encode(value)
     return value
 
 
