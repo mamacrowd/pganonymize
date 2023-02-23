@@ -1,5 +1,6 @@
 """Helper methods"""
 
+
 from __future__ import absolute_import
 import typing
 import json
@@ -9,7 +10,6 @@ import re
 import subprocess
 import time
 from datetime import datetime, date
-from uuid import UUID
 
 from cachetools import cached
 from cachetools.keys import hashkey
@@ -27,6 +27,9 @@ from pganonymize.providers import provider_registry
 
 # Needed to work with UUID objects
 psycopg2.extras.register_uuid()
+
+global_cache = {}
+import pickle
 
 
 def anonymize_tables(connection, verbose=False, dry_run=False):
@@ -53,6 +56,10 @@ def anonymize_tables(connection, verbose=False, dry_run=False):
                                    search, total_count, chunk_size, verbose=verbose, dry_run=dry_run)
         end_time = time.time()
         logging.info('{} anonymization took {:.2f}s'.format(table_name, end_time - start_time))
+
+    # print("AAAAAAAAA", global_cache)
+    # with open("/tmp/pp", 'wb') as f:
+    #     pickle.dump(global_cache, f)
 
 
 def process_row(row, columns, excludes):
@@ -100,7 +107,7 @@ def build_and_then_import_data(connection, table, primary_key, columns,
     for i in trange(batches, desc="Processing {} batches for {}".format(batches, table), disable=not verbose):
         records = cursor.fetchmany(size=chunk_size)
         if records:
-            data = parmap.map(process_row, records, columns, excludes, pm_pbar=verbose)
+            data = parmap.map(process_row, records, columns, excludes, pm_pbar=verbose,  pm_parallel=False)
             import_data(connection, temp_table, [primary_key] + column_names, filter(None, data))
     apply_anonymized_data(connection, temp_table, table, primary_key, columns)
 
@@ -219,20 +226,20 @@ def get_table_count(connection, table, dry_run):
         return total_count
 
 
-def cache_key_generator(provider_class, value):
+def cache_key_generator(name, value):
     if isinstance(value, (datetime, date)):
         value = value.isoformat()
     if not isinstance({}, typing.Hashable):
         value = json.dumps(value)
-    return hashkey(provider_class.__name__, value)
+    return hashkey(name, value)
+
 
 @cached(
-    cache={},
-    key=lambda provider_class, orig_value, **provider_config: cache_key_generator(provider_class, orig_value)
+    cache=global_cache,
+    key=lambda provider_class, orig_value, **provider_config: cache_key_generator(provider_config.get('name').split("fake.")[-1], orig_value)
 )
 def generate_value(provider_class, orig_value, **provider_config):
-    out = provider_class.alter_value(orig_value, **provider_config)
-    return out
+    return provider_class.alter_value(orig_value, **provider_config)
 
 
 def get_column_values(row, columns):
