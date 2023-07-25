@@ -41,17 +41,16 @@ class ToxTestCommand(distutils.cmd.Command):
 exec(read('pganonymize', 'version.py'))
 
 install_requires = [
-    'faker',
-    'faker>=3.0,<4.0; python_version=="2.7"',
-    'parmap; python_version>="3.6"',
-    'parmap==1.5.2; python_version<"3.6"',
-    'pgcopy',
-    'psycopg2',
-    'psycopg2>=2.8.4,<2.9; python_version<"3.6"',
-    'pyyaml',
-    'pyyaml>=5.4.1,<6.0; python_version<"3.6"',
-    'tqdm',
-    'cachetools'
+'psycopg2-binary',
+'isort',
+'pgcopy',
+'Sphinx',
+'sphinx-rtd-theme',
+'tqdm',
+'Faker',
+'cachetools',
+'pyyaml',
+'parmap'
 ]
 
 tests_require = [
@@ -61,7 +60,6 @@ tests_require = [
     'pylint',
     'pytest-pep8',
     'pytest-cov',
-    'pytest-pythonpath',
     'pytest',
 ]
 
@@ -84,10 +82,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: POSIX',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

@@ -312,7 +312,7 @@ class VatNumberProvider(Provider):
         crypt_vat_number = md5(vatnumber.encode('utf-8')).hexdigest()
 
         n = 2
-        split_string = [crypt_vat_number[index : index + n] for index in range(0, len(crypt_vat_number), n)]
+        split_string = [crypt_vat_number[index: index + n] for index in range(0, len(crypt_vat_number), n)]
 
         numbers = [str(int(digit, 16) % 10) for digit in split_string]
         separator = ''
@@ -329,7 +329,8 @@ class FiscalCodeBusinessProvider(Provider):
         crypt_fiscalcode_business = md5(fiscalcode_business.encode('utf-8')).hexdigest()
 
         n = 2
-        split_string = [crypt_fiscalcode_business[index : index + n] for index in range(0, len(crypt_fiscalcode_business), n)]
+        split_string = [crypt_fiscalcode_business[index: index + n]
+                        for index in range(0, len(crypt_fiscalcode_business), n)]
 
         numbers = [str(int(digit, 16) % 10) for digit in split_string]
         separator = ''
@@ -379,10 +380,15 @@ class FiscalCodeVatNumberProvider(Provider):
                 return char_month[index]
 
             def generate_fiscal_code(characters, numbers):
-                separator = ''
-                generate_fiscal_code = ((separator.join(characters[:6]) + separator.join(numbers[:2]) + check_month(characters[8])) + separator.join(check_day(numbers)) + characters[11]) + separator.join(numbers[6:9]) + characters[12]
-
-                return generate_fiscal_code
+                sep = ''
+                fiscal_code = f"{sep.join(characters[:6])}" \
+                              f"{sep.join(numbers[:2])}" \
+                              f"{check_month(characters[8])}" \
+                              f"{sep.join(check_day(numbers))}" \
+                              f"{characters[11]}" \
+                              f"{sep.join(numbers[6:9])}" \
+                              f"{characters[12]}"
+                return fiscal_code
 
             split_string = []
             n = 2
@@ -425,7 +431,7 @@ class RandomIDCardProvider(Provider):
     def alter_value(cls, original_value, **kwargs):
         chars = ''.join(random.choice(string.ascii_letters).upper() for _ in range(2))
         numbers = ''.join([str(random.randint(0, 9)) for _ in range(7)])
-        return chars+numbers
+        return chars + numbers
 
 
 @register('apikey')
@@ -448,7 +454,7 @@ class JsonStringProvider(Provider):
 
 @register('sameyear')
 class SameYearProvider(Provider):
-    """Provider a random date but with same year of original value."""
+    """Provider to generate a random date but with same year of original value."""
 
     @classmethod
     def alter_value(cls, original_value, **kwargs):

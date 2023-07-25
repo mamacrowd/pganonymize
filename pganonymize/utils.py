@@ -29,7 +29,6 @@ from pganonymize.providers import provider_registry
 psycopg2.extras.register_uuid()
 
 global_cache = {}
-import pickle
 
 
 def anonymize_tables(connection, verbose=False, dry_run=False):
@@ -107,7 +106,7 @@ def build_and_then_import_data(connection, table, primary_key, columns,
     for i in trange(batches, desc="Processing {} batches for {}".format(batches, table), disable=not verbose):
         records = cursor.fetchmany(size=chunk_size)
         if records:
-            data = parmap.map(process_row, records, columns, excludes, pm_pbar=verbose,  pm_parallel=False)
+            data = parmap.map(process_row, records, columns, excludes, pm_pbar=verbose, pm_parallel=False)
             import_data(connection, temp_table, [primary_key] + column_names, filter(None, data))
     apply_anonymized_data(connection, temp_table, table, primary_key, columns)
 
@@ -162,7 +161,7 @@ def row_matches_excludes(row, excludes=None):
             try:
                 if row[column] is not None and pattern.match(row[column]):
                     return True
-            except:
+            except BaseException:
                 pass
     return False
 
@@ -236,7 +235,8 @@ def cache_key_generator(name, value):
 
 @cached(
     cache=global_cache,
-    key=lambda provider_class, orig_value, **provider_config: cache_key_generator(provider_config.get('name').split("fake.")[-1], orig_value)
+    key=lambda provider_class, orig_value, **provider_config: cache_key_generator(
+        provider_config.get('name').split("fake.")[-1], orig_value)
 )
 def generate_value(provider_class, orig_value, **provider_config):
     return provider_class.alter_value(orig_value, **provider_config)
@@ -267,13 +267,10 @@ def get_column_values(row, columns):
         # Skip the current column if there is no value to be altered
         if orig_value is not None:
             provider_class = provider_registry.get_provider(provider_config['name'])
-            #print("EEEEEEEEEE", provider_class.__name__, orig_value, type(orig_value))
             value = generate_value(provider_class, orig_value, **provider_config)
-            append = column_definition.get('append')
-            if append:
+            if append := column_definition.get('append'):
                 value = value + append
-            _format = column_definition.get('format')
-            if _format:
+            if _format := column_definition.get('format'):
                 value = _format.format(pga_value=value, **row)
             nested_set(row, full_column_name, value)
             column_dict[column_name] = nested_get(row, column_name)
