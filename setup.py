@@ -41,16 +41,15 @@ class ToxTestCommand(distutils.cmd.Command):
 exec(read('pganonymize', 'version.py'))
 
 install_requires = [
-'psycopg2-binary',
-'isort',
-'pgcopy',
-'Sphinx',
-'sphinx-rtd-theme',
-'tqdm',
-'Faker',
-'cachetools',
-'pyyaml',
-'parmap'
+    'psycopg2-binary',
+    'isort',
+    'pgcopy',
+    'Sphinx',
+    'tqdm',
+    'Faker',
+    'cachetools',
+    'pyyaml',
+    'parmap'
 ]
 
 tests_require = [
