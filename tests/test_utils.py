@@ -157,8 +157,8 @@ class TestImportData(object):
         assert connection.cursor.call_count == mock_cursor.close.call_count
         assert copy_manager.call_args_list == [call(connection, 'tmp_auth_user', ['id', 'first_name', 'json_column'])]
         assert cmm.copy.call_count == 1
-        assert cmm.copy.call_args_list == [call([['dummy nameappend-me', b'{"field1": "dummy json field1"}'],
-                                                 ['dummy nameappend-me', b'{"field2": "dummy json field2"}']])]
+        assert cmm.copy.call_args_list == [call([[b'dummy nameappend-me', b'{"field1": "dummy json field1"}'],
+                                                 [b'dummy nameappend-me', b'{"field2": "dummy json field2"}']])]
 
 
 class TestBuildAndThenImport(object):
