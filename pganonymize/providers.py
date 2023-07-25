@@ -463,5 +463,5 @@ class SameYearProvider(Provider):
             year = datetime.strptime(original_value, "%Y-%m-%d").year
         else:
             year = original_value.year
-        print(f"{type(original_value)}, {original_value}, {type(birth_date)}, {birth_date}")
+        # print(f"{type(original_value)}, {original_value}, {type(birth_date)}, {birth_date}")
         return birth_date.replace(year=year)
