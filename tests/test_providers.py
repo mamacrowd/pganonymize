@@ -1,3 +1,4 @@
+import datetime
 import operator
 import uuid
 from collections import OrderedDict
@@ -211,3 +212,11 @@ class TestUUID4Provider(object):
     @pytest.mark.parametrize('value, expected', [(None, uuid.UUID), ('Foo', uuid.UUID)])
     def test_alter_value(self, value, expected):
         assert type(providers.UUID4Provider.alter_value(value)) == expected
+
+
+class TestSameYearProvider(object):
+
+    @pytest.mark.parametrize('value, year, type_expected', [(datetime.datetime.strptime("1981-04-12", "%Y-%m-%d"), 1981, datetime.date), ('1982-04-12', 1982, datetime.date)])
+    def test_alter_value(self, value, year, type_expected):
+        assert type(providers.SameYearProvider.alter_value(value)) == type_expected
+        assert providers.SameYearProvider.alter_value(value).year == year

@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from faker import Faker
 import string
+from datetime import datetime
 
 from pganonymize.config import config
 from pganonymize.exceptions import InvalidProvider, InvalidProviderArgument, ProviderAlreadyRegistered
@@ -407,7 +408,7 @@ class FiscalCodeVatNumberProvider(Provider):
 
 
 @register('phonenumberita')
-class SetProvider(Provider):
+class PhoneNumberItaProvider(Provider):
     """Provider to set a random value for phone number."""
 
     @classmethod
@@ -417,7 +418,7 @@ class SetProvider(Provider):
 
 
 @register('randomidcard')
-class SetProvider(Provider):
+class RandomIDCardProvider(Provider):
     """Provider to set a random value for id card."""
 
     @classmethod
@@ -428,7 +429,7 @@ class SetProvider(Provider):
 
 
 @register('apikey')
-class SetProvider(Provider):
+class ApiKeyProvider(Provider):
     """Provider to set a random uuid"""
 
     @classmethod
@@ -443,3 +444,18 @@ class JsonStringProvider(Provider):
     @classmethod
     def alter_value(cls, original_value, **kwargs):
         return json.dumps(kwargs.get('object'))
+
+
+@register('sameyear')
+class SameYearProvider(Provider):
+    """Provider a random date but with same year of original value."""
+
+    @classmethod
+    def alter_value(cls, original_value, **kwargs):
+        birth_date = faker_initializer.faker.date_of_birth()
+        if not isinstance(original_value, datetime):
+            year = datetime.strptime(original_value, "%Y-%m-%d").year
+        else:
+            year = original_value.year
+        print(f"{type(original_value)}, {original_value}, {type(birth_date)}, {birth_date}")
+        return birth_date.replace(year=year)

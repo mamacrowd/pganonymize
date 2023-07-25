@@ -1,5 +1,4 @@
 coverage==7.2.7
 mock==5.1.0
 pytest-cov==4.1.0
-pytest-pythonpath==0.7.4
 six==1.16.0
