@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from faker import Faker
 import string
-from datetime import datetime
+import datetime
 
 from pganonymize.config import config
 from pganonymize.exceptions import InvalidProvider, InvalidProviderArgument, ProviderAlreadyRegistered
@@ -458,10 +458,12 @@ class SameYearProvider(Provider):
 
     @classmethod
     def alter_value(cls, original_value, **kwargs):
+        if not original_value:
+            return None
         birth_date = faker_initializer.faker.date_of_birth()
-        if not isinstance(original_value, datetime):
-            year = datetime.strptime(original_value, "%Y-%m-%d").year
-        else:
-            year = original_value.year
+        year = (
+            original_value.year if isinstance(original_value, datetime.date) else
+            datetime.datetime.strptime(original_value, "%Y-%m-%d").year
+        )
         # print(f"{type(original_value)}, {original_value}, {type(birth_date)}, {birth_date}")
         return birth_date.replace(year=year)
