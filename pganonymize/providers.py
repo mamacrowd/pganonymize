@@ -9,6 +9,7 @@ from uuid import uuid4
 from faker import Faker
 import string
 import datetime
+from calendar import isleap
 
 from pganonymize.config import config
 from pganonymize.exceptions import InvalidProvider, InvalidProviderArgument, ProviderAlreadyRegistered
@@ -461,6 +462,9 @@ class SameYearProvider(Provider):
         if not original_value:
             return None
         birth_date = faker_initializer.faker.date_of_birth()
+        # birth_date = datetime.datetime.strptime('1968-02-29', "%Y-%m-%d").date()
+        if isleap(birth_date.year):
+            birth_date = birth_date.replace(day=random.randint(1, 25))
         year = (
             original_value.year if isinstance(original_value, datetime.date) else
             datetime.datetime.strptime(original_value, "%Y-%m-%d").year
