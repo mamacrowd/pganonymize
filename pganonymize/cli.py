@@ -10,6 +10,15 @@ from pganonymize.config import config
 from pganonymize.constants import DATABASE_ARGS, DEFAULT_SCHEMA_FILE
 from pganonymize.providers import provider_registry
 from pganonymize.utils import anonymize_tables, create_database_dump, get_connection, truncate_tables
+import sentry_sdk
+from sentry_sdk.crons import monitor
+
+sentry_sdk.init(
+    dsn="https://f3d113ebe20f5832c988e8b2a08c8836@o4506552240308224.ingest.sentry.io/4506593113866240",
+
+    # Enable performance monitoring
+    enable_tracing=False,
+)
 
 
 def get_pg_args(args):
@@ -50,6 +59,7 @@ def get_arg_parser():
     return parser
 
 
+@monitor(monitor_slug='full-business-copy-anonymized')
 def main(args):
     """Main method"""
 

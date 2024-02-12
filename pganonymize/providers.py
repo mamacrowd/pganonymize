@@ -368,15 +368,15 @@ class FiscalCodeVatNumberProvider(Provider):
             # code for fiscalcode natural person
             crypt_fiscal_code = md5(original_value.encode('utf-8')).hexdigest()
 
-            def check_day(numbers):
-                if int(numbers[3]) > 7:
-                    numbers[3] = str(1)
-                return numbers[3:5]
+            def check_day(num):
+                if int(num[3]) > 7:
+                    num[3] = str(1)
+                return num[3:5]
 
-            def check_month(character):
+            def check_month(char):
                 char_month = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T']
-                if character in char_month:
-                    return character
+                if char in char_month:
+                    return char
                 index = 4
                 return char_month[index]
 
