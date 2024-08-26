@@ -14,5 +14,5 @@ RUN apt-get update -y \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY . .
-
+RUN pip install -r requirements.txt
 RUN python setup.py install
