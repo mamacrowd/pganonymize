@@ -83,18 +83,30 @@ def _consistent_group_for(provider_name, raw_value):
 
 
 def _normalize_key(group_id, raw_value):
-    """Normalize ``raw_value`` for the registry key, depending on the group."""
+    """
+    Normalize ``raw_value`` for the registry key, depending on the group.
+
+    For fiscal/VAT groups we collapse incidental differences in case and surrounding
+    whitespace so that ``"RSSMRA80..."`` and ``"  rssmra80...  "`` are recognised as
+    the same value.
+
+    For every other group the key is byte-exact: collapsing whitespace or case would
+    fold genuinely distinct raw values onto the same anonymized output, which can
+    violate UNIQUE constraints downstream (e.g. two ``user_account.email`` rows
+    differing only by a trailing space would become the same md5).
+    """
     if raw_value is None:
         return None
-    s = str(raw_value).strip()
-    if not s:
-        return None
     if group_id == 'fiscal_person':
-        return s.upper()
+        s = str(raw_value).strip()
+        return s.upper() if s else None
     if group_id == 'fiscal_business_or_vat':
-        s = s.upper()
+        s = str(raw_value).strip().upper()
+        if not s:
+            return None
         return s[2:] if s.startswith('IT') else s
-    return s
+    s = str(raw_value)
+    return s if s else None
 
 
 def _to_canonical(provider_name, anonymized_value):

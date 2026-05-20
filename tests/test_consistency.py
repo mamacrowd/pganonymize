@@ -58,8 +58,12 @@ class TestNormalizeKey:
         ('fiscal_business_or_vat', 'IT12345678901', '12345678901'),
         ('fiscal_business_or_vat', 'it12345678901', '12345678901'),
         ('fiscal_business_or_vat', '12345678901', '12345678901'),
+        # Non-fiscal: byte-exact (case- and whitespace-sensitive) to avoid collapsing
+        # distinct raw values onto the same anonymized output (UNIQUE-constraint risk).
         ('fake.first_name', 'Mario', 'Mario'),
-        ('fake.first_name', '  Mario  ', 'Mario'),
+        ('fake.first_name', '  Mario  ', '  Mario  '),
+        ('md5', 'foo@bar.com', 'foo@bar.com'),
+        ('md5', 'foo@bar.com ', 'foo@bar.com '),
         ('any', None, None),
         ('any', '', None),
     ])
@@ -159,6 +163,18 @@ class TestCrossTableConsistency:
         out_a = get_column_values(OrderedDict([('email', 'foo@bar.com')]), cols)
         out_b = get_column_values(OrderedDict([('email', 'foo@bar.com')]), cols)
         assert out_a['email'] == out_b['email']
+
+    def test_md5_whitespace_difference_produces_distinct_output(self):
+        """
+        Regression for the UNIQUE violation on user_account.email: trailing/leading
+        whitespace in the raw value must NOT collapse onto the same cache slot of
+        another value. The provider's md5 is sensitive to whitespace, the cache
+        key must be too.
+        """
+        cols = [{'email': {'provider': {'name': 'md5'}}}]
+        out_clean = get_column_values(OrderedDict([('email', 'foo@bar.com')]), cols)
+        out_spaced = get_column_values(OrderedDict([('email', 'foo@bar.com ')]), cols)
+        assert out_clean['email'] != out_spaced['email']
 
 
 class TestYamlOrdering:
